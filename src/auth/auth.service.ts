@@ -211,6 +211,7 @@ export class AuthService {
 		await this.prisma.phoneVerificationCode.updateMany({
 			where: {
 				phoneNumber: phoneNumber,
+				status: 0,
 			},
 			data: {
 				status: 2,
