@@ -7,15 +7,23 @@ import {
 	Post,
 	Put,
 	UseGuards,
+	Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 
-import { Public, GetCurrentUserId, GetCurrentUser } from '../common/decorators';
-import { RefreshTokenGuard } from '../common/guards';
+import { Public, GetCurrentUser } from '../common/decorators';
+import { AccessTokenGuard, RefreshTokenGuard } from '../common/guards';
+import { AuthGuard } from '@nestjs/passport';
+
 import { AuthService } from './auth.service';
 import { CreateUserDto, LoginUserDto } from './dto';
-import { Tokens } from './types';
+import { JwtPayload, Tokens } from './types';
 
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
+
+interface RequestUser extends Request {
+	user: any
+}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -41,21 +49,20 @@ export class AuthController {
 	/**
    	 * user log out
      */
+    @UseGuards(AuthGuard('jwt'))
 	@Post('logout')
-	public async logout(@GetCurrentUserId() userId: string): Promise<boolean> {
-		return await this.authService.logout(userId);
+	public async logout(@Req() req: Request): Promise<boolean> {
+		return await this.authService.logout((<RequestUser>req).user.id);
 	}
 
 	/**
    	 * refresh user tokens
      */
 	@Public()
-	@UseGuards(RefreshTokenGuard)
+	@UseGuards(AuthGuard('jwt-refresh'))
 	@Post('refresh')
-	refreshTokens(
-		@GetCurrentUserId() userId: string,
-		@GetCurrentUser('refreshToken') refreshToken: string,
-	): Promise<Tokens> {
-		return this.authService.refreshTokens(userId, refreshToken);
+	refreshTokens(@Req() req: Request): Promise<Tokens> {
+		const user = (<RequestUser>req).user;
+		return this.authService.refreshTokens(user.sub, user.refreshToken);
 	}
 }

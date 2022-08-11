@@ -169,4 +169,37 @@ export class AuthService {
 			refreshToken: refreshToken,
 		};
 	}
+
+	async validateUser(payload:LoginUserDto): Promise<any> {
+		let query;
+		switch (payload.loginType) {
+			case "email":
+				query = { email: payload.loginValue };
+				break;
+			case "nickname":
+				query = { nickname: payload.loginValue };
+				break;
+			case "phoneNumber":
+				query = { phoneNumber: payload.loginValue };
+				break;
+			default:
+				throw new HttpException("loginType must be among email, nickname, phoneNumber", HttpStatus.BAD_REQUEST);
+		}
+
+		const user = await this.prisma.user.findUnique({
+			where: query
+		});
+
+		if(!user) {
+			return null;
+		}
+
+		const passwordMatches = await argon.verify(user.password, user.passwordSalt + payload.password);
+		if (passwordMatches) {
+			const {password, ...result} = user;
+			return result;
+		} else {
+			return null;
+		}
+	}
 }
