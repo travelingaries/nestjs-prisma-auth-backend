@@ -1,23 +1,19 @@
 import {
 	Body,
-	ClassSerializerInterceptor,
 	Controller,
 	HttpException,
 	HttpStatus,
 	Get,
 	Post,
 	Put,
-	Param,
-	ParseIntPipe,
-	Query,
-	Request,
 	UseGuards,
-	UseInterceptors
 } from '@nestjs/common';
 
-import { AuthService, RegistrationStatus } from './auth.service';
-
-import { CreateUserDto, LoginUserDto } from '../users/user.dto';
+import { Public, GetCurrentUserId, GetCurrentUser } from '../common/decorators';
+import { RefreshTokenGuard } from '../common/guards';
+import { AuthService } from './auth.service';
+import { CreateUserDto, LoginUserDto } from './dto';
+import { Tokens } from './types';
 
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 
@@ -26,17 +22,40 @@ import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 export class AuthController {
 	constructor(private readonly authService: AuthService) {}
 
+	/**
+   	 * user sign up
+     */
 	@Post('register')
-	public async register(@Body() payload: CreateUserDto):Promise<RegistrationStatus> {
-		const result:RegistrationStatus = await this.authService.register(payload);
-		if (!result.success) {
-			throw new HttpException(result.message, HttpStatus.BAD_REQUEST);
-		}
-		return result;
+	public async register(@Body() payload: CreateUserDto): Promise<Tokens> {
+		return await this.authService.register(payload);
 	}
 
+	/**
+   	 * user log in
+     */
 	@Post('login')
-	public async login(@Body() payload: LoginUserDto):Promise<any> {
+	public async login(@Body() payload: LoginUserDto): Promise<Tokens> {
 		return await this.authService.login(payload);
+	}
+
+	/**
+   	 * user log out
+     */
+	@Post('logout')
+	public async logout(@GetCurrentUserId() userId: string): Promise<boolean> {
+		return await this.authService.logout(userId);
+	}
+
+	/**
+   	 * refresh user tokens
+     */
+	@Public()
+	@UseGuards(RefreshTokenGuard)
+	@Post('refresh')
+	refreshTokens(
+		@GetCurrentUserId() userId: string,
+		@GetCurrentUser('refreshToken') refreshToken: string,
+	): Promise<Tokens> {
+		return this.authService.refreshTokens(userId, refreshToken);
 	}
 }

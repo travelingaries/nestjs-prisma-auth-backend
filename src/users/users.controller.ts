@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('users')
 @Controller('users')
@@ -9,7 +9,7 @@ export class UsersController {
   constructor(private readonly prismaService: PrismaService) {}
 
   /**
-   * 사용자 리스트 조회
+   * show all users
    */
   @Get('')
   async getUsers() {
