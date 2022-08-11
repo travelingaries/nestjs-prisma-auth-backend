@@ -20,3 +20,12 @@ model User {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 }
+
+// phone verification code
+model PhoneVerificationCode {
+  id                  Int           @id @default(autoincrement())
+  phoneNumber         String
+  code                String
+  status              Int           @default(0)
+  createdAt           DateTime      @default(now())
+}

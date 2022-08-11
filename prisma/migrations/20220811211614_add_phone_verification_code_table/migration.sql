@@ -1,0 +1,8 @@
+-- CreateTable
+CREATE TABLE "PhoneVerificationCode" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "phoneNumber" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "status" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
