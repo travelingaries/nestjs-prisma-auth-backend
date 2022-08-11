@@ -12,7 +12,6 @@ import {
 import { Request } from 'express';
 
 import { Public, GetCurrentUser } from '../common/decorators';
-import { AccessTokenGuard, RefreshTokenGuard } from '../common/guards';
 import { AuthGuard } from '@nestjs/passport';
 
 import { AuthService } from './auth.service';

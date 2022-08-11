@@ -1,18 +1,42 @@
-import { Controller, Get } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import { Request } from 'express';
+
+import { UsersService } from './users.service';
+import { AuthGuard } from '@nestjs/passport';
+
 import { ApiTags } from '@nestjs/swagger';
 
-import { PrismaService } from '../prisma/prisma.service';
+interface RequestUser extends Request {
+  user: any
+}
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly usersService: UsersService) {}
 
   /**
-   * show all users
+   * show all users (email and nickname only)
    */
   @Get('')
   async getUsers() {
-    return this.prismaService.user.findMany();
+    return await this.usersService.getAllUsers();
+  }
+
+  /**
+   * show user info (summary if not logged in)
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':id')
+  async getUserById(@Param('id') id: string, @Req() req: Request) {
+    const user = await this.usersService.getUserById(id, (<RequestUser>req).user.sub);
+
+    return user;
   }
 }

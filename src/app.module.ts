@@ -8,7 +8,6 @@ import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 
 import { APP_GUARD } from '@nestjs/core';
-import { AccessTokenGuard } from './common/guards';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), AuthModule, PrismaModule, UsersModule],
