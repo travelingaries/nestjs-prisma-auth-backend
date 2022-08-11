@@ -30,6 +30,17 @@ export class UsersController {
   }
 
   /**
+   * show current user info
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Get('/profile')
+  async getCurrentUser(@Req() req: Request) {
+    const user = await this.usersService.getUserById((<RequestUser>req).user.sub, (<RequestUser>req).user.sub);
+
+    return user;
+  }
+
+  /**
    * show user info (summary if not logged in)
    */
   @UseGuards(AuthGuard('jwt'))
