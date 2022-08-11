@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import * as argon from 'argon2';
 import { PrismaService } from "../prisma/prisma.service";
-import { CreateUserDto, LoginUserDto } from "./dto";
+import { CreateUserDto, LoginUserDto, ResetPasswordDto } from "./dto";
 import { User } from "@prisma/client";
 import { JwtPayload, Tokens } from './types';
 
@@ -265,6 +265,46 @@ export class AuthService {
 				status: 1,
 			},
 		});
+		return true;
+	}
+
+	async resetPasswordWithPhoneNumber(payload: ResetPasswordDto): Promise<boolean> {
+		const verifiedCode = await this.prisma.phoneVerificationCode.findFirst({
+			where: {
+				phoneNumber: payload.phoneNumber,
+				code: payload.code,
+				status: 1
+			},
+		});
+		if (!verifiedCode) {
+			throw new HttpException("verify phone number first", HttpStatus.FORBIDDEN);
+		}
+
+		const time = (new Date()).valueOf() - (new Date(verifiedCode.updatedAt)).valueOf();
+		if (time / 60000 > 60) {
+			throw new HttpException("verify phone number again", HttpStatus.FORBIDDEN);
+		}
+
+		const salt = (Math.random().toString(36)+'00000000000000000').slice(2, 10);
+		const hash = await argon.hash(salt + payload.newPassword);
+
+		await this.prisma.user.update({
+			where: {
+				phoneNumber: payload.phoneNumber,
+			},
+			data: {
+				password: hash,
+				passwordSalt: salt,
+			},
+		}).catch((error) => {
+			if (error instanceof PrismaClientKnownRequestError) {
+				if (error.code === "P2002") {
+					throw new HttpException("error updating user password", HttpStatus.FORBIDDEN);
+				}
+			}
+			throw error;
+		});;
+
 		return true;
 	}
 }

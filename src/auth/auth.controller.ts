@@ -87,8 +87,6 @@ export class AuthController {
 	 */
 	@Post('find_password')
 	public async findPassword(@Body() payload: ResetPasswordDto): Promise<boolean> {
-
-
-		return true;
+		return await this.authService.resetPasswordWithPhoneNumber(payload);
 	}
 }
