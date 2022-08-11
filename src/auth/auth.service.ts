@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import * as argon from 'argon2';
 import { PrismaService } from "../prisma/prisma.service";
-import { CreateUserDto, LoginUserDto } from "./dto/auth.dto";
+import { CreateUserDto, LoginUserDto } from "./dto";
 import { User } from "@prisma/client";
 import { JwtPayload, Tokens } from './types';
 
@@ -201,5 +201,69 @@ export class AuthService {
 		} else {
 			return null;
 		}
+	}
+
+	async sendPhoneVerificationCode(phoneNumber: string):Promise<string> {
+		if (!phoneNumber) {
+			throw new HttpException("no phone number entered", HttpStatus.BAD_REQUEST);
+		}
+
+		await this.prisma.phoneVerificationCode.updateMany({
+			where: {
+				phoneNumber: phoneNumber,
+			},
+			data: {
+				status: 2,
+			},
+		});
+
+		const code:string = Math.floor(100000 + Math.random() * 900000).toString();
+		await this.prisma.phoneVerificationCode.create({
+			data: {
+				phoneNumber: phoneNumber,
+				code: code,
+			},
+		}).catch((error) => {
+			if (error instanceof PrismaClientKnownRequestError) {
+				if (error.code === "P2002") {
+					throw new HttpException("cannot send code", HttpStatus.FORBIDDEN);
+				}
+			}
+			throw error;
+		});
+
+		return code;
+	}
+
+	async checkPhoneVerificationCode(phoneNumber: string, code: string):Promise<boolean> {
+		if (!phoneNumber || !code) {
+			throw new HttpException("phone number and code required", HttpStatus.BAD_REQUEST);
+		}
+
+		const sentCode = await this.prisma.phoneVerificationCode.findFirst({
+			where: {
+				phoneNumber: phoneNumber,
+				code: code,
+				status: 0
+			},
+		});
+		if (!sentCode) {
+			return false;
+		}
+
+		const time = (new Date()).valueOf() - (new Date(sentCode.createdAt)).valueOf();
+		if (time / 60000 > 3) {
+			return false;
+		}		
+
+		await this.prisma.phoneVerificationCode.update({
+			where: {
+				id: sentCode.id,
+			},
+			data: {
+				status: 1,
+			},
+		});
+		return true;
 	}
 }

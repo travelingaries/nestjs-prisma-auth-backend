@@ -15,7 +15,7 @@ import { Public, GetCurrentUser } from '../common/decorators';
 import { AuthGuard } from '@nestjs/passport';
 
 import { AuthService } from './auth.service';
-import { CreateUserDto, LoginUserDto } from './dto';
+import { CreateUserDto, LoginUserDto, ResetPasswordDto, VerifyCodeDto } from './dto';
 import { JwtPayload, Tokens } from './types';
 
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
@@ -60,8 +60,35 @@ export class AuthController {
 	@Public()
 	@UseGuards(AuthGuard('jwt-refresh'))
 	@Post('refresh')
-	refreshTokens(@Req() req: Request): Promise<Tokens> {
+	public async refreshTokens(@Req() req: Request): Promise<Tokens> {
 		const user = (<RequestUser>req).user;
 		return this.authService.refreshTokens(user.sub, user.refreshToken);
+	}
+
+	/**
+	 * send phone number verification code
+	 */
+	@Post('phone/send_code')
+	public async sendPhoneVerificationCode(@Body() payload: { phoneNumber: string }): Promise<string> {
+		const code = await this.authService.sendPhoneVerificationCode(payload.phoneNumber);
+		return code;
+	}
+
+	/**
+	 * check phone verification code
+	 */
+	@Post('phone/verify_code')
+	public async checkPhoneVerificationCode(@Body() payload: VerifyCodeDto): Promise<boolean> {
+		return await this.authService.checkPhoneVerificationCode(payload.phoneNumber, payload.code);
+	}
+
+	/**
+	 * reset user password after entering phone number
+	 */
+	@Post('find_password')
+	public async findPassword(@Body() payload: ResetPasswordDto): Promise<boolean> {
+
+
+		return true;
 	}
 }

@@ -37,13 +37,3 @@ export class LoginUserDto {
     @IsString()
     @ApiProperty() readonly password: string;
 }
-
-export class UpdatePasswordDto {
-    @IsNotEmpty()
-    @IsString()
-    @ApiProperty() currentPassword: string;
-
-    @IsNotEmpty()
-    @IsString()
-    @ApiProperty() newPassword: string;
-}
