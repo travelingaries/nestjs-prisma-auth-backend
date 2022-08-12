@@ -1,4 +1,5 @@
 # Authentication Backend with NodeJS(NestJS) & Prisma
+[Currently deployed on Heroku](https://nestjs-prisma-auth-backend.herokuapp.com/docs)
 
 ## ✨ Requirements
 
@@ -33,6 +34,7 @@ $ npm run start:prod
 ## 📝 Api Docs
 
 - dev 또는 prod 환경 실행중인 상태에서 `GET /docs` 호출 시 Swagger 문서 확인 가능
+- 현재 Heroku에 배포해두어서, [Heroku](https://nestjs-prisma-auth-backend.herokuapp.com/docs)에서도 확인 가능
 
 ### 휴대폰 인증번호 생성
 `POST /auth/phone/send_code`
