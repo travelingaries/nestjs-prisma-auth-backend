@@ -131,6 +131,12 @@ $ npm run start:prod
 - `nickname` `<string>`
 - `name` `<string>`
 - `phoneNumber` `<string>`
+
 타인 정보
 - `email` `<string>`
 - `nickname` `<string>`
+
+## 🔍 특히 신경 쓴 부분
+
+- 실제 프로덕션 환경과 최대한 비슷하게 Access Token, Refresh Token을 별도로 발급하여 관리할 수 있도록 설계해보았습니다.
+- 보다 높은 수준의 보안을 위해 랜덤하게 생성된 passwordSalt를 유저 password 앞에 붙인 후 암호화하여 저장했습니다.
