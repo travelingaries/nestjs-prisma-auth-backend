@@ -22,6 +22,10 @@ export class CreateUserDto {
     @IsNotEmpty()
     @IsString()
     @ApiProperty() phoneNumber: string;
+
+    @IsNotEmpty()
+    @IsString()
+    @ApiProperty() code: string;
 }
 
 export class LoginUserDto {

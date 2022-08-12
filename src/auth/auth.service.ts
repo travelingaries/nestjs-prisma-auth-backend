@@ -17,6 +17,11 @@ export class AuthService {
 	) {}
 
 	async register(payload: CreateUserDto):Promise<Tokens> {
+		const phoneCodeId = await this.checkPhoneVerifiedRecord(payload.phoneNumber, payload.code);
+		if (!phoneCodeId) {
+			throw new HttpException("verify phone number first", HttpStatus.FORBIDDEN);
+		}
+
 		// prepend randomly generated salt for increased safety
 		const salt = (Math.random().toString(36)+'00000000000000000').slice(2, 10);
 		const hash = await argon.hash(salt + payload.password);
@@ -42,9 +47,12 @@ export class AuthService {
 			throw new HttpException("duplicate phone number", HttpStatus.CONFLICT);
 		}
 
+		const {code, ...result} = payload;
+
+		// create user
 		user = await this.prisma.user.create({
 			data: {
-				...(payload),
+				...result,
 				password: hash,
 				passwordSalt: salt,
 			},
@@ -55,6 +63,16 @@ export class AuthService {
 				}
 			}
 			throw error;
+		});
+
+		// update status of phone verification code
+		await this.prisma.phoneVerificationCode.update({
+			where: {
+				id: phoneCodeId,
+			},
+			data: {
+				status: 3,
+			},
 		});
 
 		const tokens = await this.getTokens(user.id, user.email)
@@ -236,7 +254,7 @@ export class AuthService {
 		return code;
 	}
 
-	async checkPhoneVerificationCode(phoneNumber: string, code: string):Promise<boolean> {
+	async checkPhoneVerificationCode(phoneNumber: string, code: string): Promise<boolean> {
 		if (!phoneNumber || !code) {
 			throw new HttpException("phone number and code required", HttpStatus.BAD_REQUEST);
 		}
@@ -268,11 +286,16 @@ export class AuthService {
 		return true;
 	}
 
-	async resetPasswordWithPhoneNumber(payload: ResetPasswordDto): Promise<boolean> {
+	// check if phone number has been verified within the last hour
+	async checkPhoneVerifiedRecord(phoneNumber: string, code: string): Promise<number> {
+		if (!phoneNumber || !code) {
+			throw new HttpException("phone number and code required", HttpStatus.BAD_REQUEST);
+		}
+
 		const verifiedCode = await this.prisma.phoneVerificationCode.findFirst({
 			where: {
-				phoneNumber: payload.phoneNumber,
-				code: payload.code,
+				phoneNumber: phoneNumber,
+				code: code,
 				status: 1
 			},
 		});
@@ -283,6 +306,15 @@ export class AuthService {
 		const time = (new Date()).valueOf() - (new Date(verifiedCode.updatedAt)).valueOf();
 		if (time / 60000 > 60) {
 			throw new HttpException("verify phone number again", HttpStatus.FORBIDDEN);
+		}
+
+		return verifiedCode.id;
+	}
+
+	async resetPasswordWithPhoneNumber(payload: ResetPasswordDto): Promise<boolean> {
+		const phoneCodeId = await this.checkPhoneVerifiedRecord(payload.phoneNumber, payload.code);
+		if (!phoneCodeId) {
+			throw new HttpException("verify phone number first", HttpStatus.FORBIDDEN);
 		}
 
 		const salt = (Math.random().toString(36)+'00000000000000000').slice(2, 10);
@@ -304,6 +336,16 @@ export class AuthService {
 			}
 			throw error;
 		});;
+
+		// update status of phone verification code
+		await this.prisma.phoneVerificationCode.update({
+			where: {
+				id: phoneCodeId,
+			},
+			data: {
+				status: 3,
+			},
+		});
 
 		return true;
 	}
